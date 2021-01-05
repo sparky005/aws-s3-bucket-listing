@@ -81,12 +81,32 @@ function createRequestObject(){
 /* The variable http will hold our new XMLHttpRequest object. */
 var http = createRequestObject(); 
 function getList(){
-	http.open('get', location.protocol+'//'+location.hostname);
+	http.open('get', location.protocol+'//'+location.hostname+'/'+location.pathname.split('/')[1]+'/?list-type=2');
 	http.onreadystatechange = handleList; 
 	http.send(null);
 }
 
+function buildFileList(filex) {
+	fileList = new Array();
+	for(i=0; i<filex.length; i++){ 
+			fileData =new Array();
+			fileList[i] = fileData;
+		size = filex[i].getElementsByTagName('Size')[0].firstChild.data;
+		name = filex[i].getElementsByTagName('Key')[0].firstChild.data;
+		lastmod = filex[i].getElementsByTagName('LastModified')[0].firstChild.data;
+			link = "<A HREF=\""+name+"\">"+name+"</A>";
+			fileData[0] = name;
+			fileData[1] = size;
+			fileData[2] = lastmod;
+			fileData[3] = link;
+	}
+	return fileList
+}
+
 function handleList(){
+	console.log('called handle list');
+	// create a new request object for later use
+	var http2 = createRequestObject(); 
 	/* Make sure that the transaction has finished. The XMLHttpRequest object 
 		has a property called readyState with several states:
 		0: Uninitialized
@@ -95,28 +115,45 @@ function handleList(){
 		3: Interactive
 		4: Finished */
 	if(http.readyState == 4){ //Finished loading the response
-		/* We have got the response from the server-side script,
-			let's see just what it was. using the responseText property of 
-			the XMLHttpRequest object. */
 		var response = http.responseXML;
 
-filex = response.getElementsByTagName('Contents');
+
+isTruncated = response.getElementsByTagName('IsTruncated')[0].firstChild.data;
+try {
+	continuationToken = response.getElementsByTagName('NextContinuationToken')[0].firstChild.data;
+	filex = response.getElementsByTagName('Contents');
+}
+catch(err) {
+	console.log(err)
+}
+
+fileList = buildFileList(filex);
+count = 0;
+while (isTruncated == 'true') {
+	count = count + 1;
+	if (count > 10) {
+		console.log('max truncation attempts');
+		break;
+	}
+	console.log('results were truncated, trying again');
+	console.log(isTruncated);
+	http2.open('get', location.protocol+'//'+location.hostname+'/'+location.pathname.split('/')[1]+'/?list-type=2&continuation-token='+encodeURIComponent(continuationToken), false);
+	http2.send(null)
+	var response = http2.responseXML;
+	isTruncated = response.getElementsByTagName('IsTruncated')[0].firstChild.data;
+try {
+	continuationToken = response.getElementsByTagName('NextContinuationToken')[0].firstChild.data;
+	filex = response.getElementsByTagName('Contents');
+}
+console.log('got all results')
+catch(err) {
+	console.log(err)
+}
+	fileList = fileList.concat(buildFileList(filex));
+}
 
 
 res = '';
-fileList = new Array();
-for(i=0; i<filex.length; i++){ 
-        fileData =new Array();
-        fileList[i] = fileData;
-	size = filex[i].getElementsByTagName('Size')[0].firstChild.data;
-	name = filex[i].getElementsByTagName('Key')[0].firstChild.data;
-	lastmod = filex[i].getElementsByTagName('LastModified')[0].firstChild.data;
-        link = "<A HREF=\""+name+"\">"+name+"</A>";
-        fileData[0] = name;
-        fileData[1] = size;
-        fileData[2] = lastmod;
-        fileData[3] = link;
-}
 fileList.sort(getSort());
 //document.write(getSort());
 for(i=0; i<fileList.length; i++){ //length is the same as count($array)

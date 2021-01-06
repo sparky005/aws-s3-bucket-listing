@@ -121,17 +121,17 @@ function handleList(){
 isTruncated = response.getElementsByTagName('IsTruncated')[0].firstChild.data;
 try {
 	continuationToken = response.getElementsByTagName('NextContinuationToken')[0].firstChild.data;
-	filex = response.getElementsByTagName('Contents');
 }
 catch(err) {
 	console.log(err)
 }
 
+filex = response.getElementsByTagName('Contents');
 fileList = buildFileList(filex);
 count = 0;
 while (isTruncated == 'true') {
 	count = count + 1;
-	if (count > 10) {
+	if (count > 100) {
 		console.log('max truncation attempts');
 		break;
 	}
@@ -143,11 +143,11 @@ while (isTruncated == 'true') {
 	isTruncated = response.getElementsByTagName('IsTruncated')[0].firstChild.data;
 try {
 	continuationToken = response.getElementsByTagName('NextContinuationToken')[0].firstChild.data;
-	filex = response.getElementsByTagName('Contents');
 }
 catch(err) {
 	console.log(err)
 }
+	filex = response.getElementsByTagName('Contents');
 	fileList = fileList.concat(buildFileList(filex));
 }
 console.log('got all results')

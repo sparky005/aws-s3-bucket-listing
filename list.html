@@ -145,15 +145,23 @@ try {
 	continuationToken = response.getElementsByTagName('NextContinuationToken')[0].firstChild.data;
 	filex = response.getElementsByTagName('Contents');
 }
-console.log('got all results')
 catch(err) {
 	console.log(err)
 }
 	fileList = fileList.concat(buildFileList(filex));
 }
+console.log('got all results')
 
 
 res = '';
+// remove duplicates
+console.log(fileList.length)
+uniqFileList = Array.from(new Set(fileList.map(a => a[0])))
+	.map(name => {
+		return fileList.find(a => a[0] === name)
+	})
+console.log(uniqFileList.length)
+fileList = uniqFileList;
 fileList.sort(getSort());
 //document.write(getSort());
 for(i=0; i<fileList.length; i++){ //length is the same as count($array)
